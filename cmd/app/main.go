@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	// Подключение к базе данных
 	dbUrl := ""
 
 	dbPool, err := pgxpool.New(context.Background(), dbUrl)
@@ -21,7 +20,6 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	// Инициализация репозитория, сервиса и обработчика
 	repo := repository.NewRepositoryUser(dbPool)
 	userService := service.NewServiceUser(repo)
 	h := handler.NewHandler(userService)
