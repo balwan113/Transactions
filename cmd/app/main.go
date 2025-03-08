@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Подключение к базе данных
-	dbUrl := "postgres://postgres:kilboo123@localhost:5432/testdb"
+	dbUrl := ""
 
 	dbPool, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
