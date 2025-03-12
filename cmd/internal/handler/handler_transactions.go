@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"petproject2/cmd/internal/service"
 	"petproject2/cmd/models"
@@ -35,15 +36,13 @@ func (h *HandlerTransations) TransferMoney(c *gin.Context) {
 		return
 	}
 
-	// Конвертируем user_id в int
 	userID, ok := atUserID.(int)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки user_id"})
 		return
 	}
 
-	// Дальше передаём userID в сервис для обработки транзакции
-	err := h.service.Transfer(ctx, userID, transaction.To_userid, transaction.Amount)
+	err := h.service.Transfer(ctx, userID, transaction.ToUserID, transaction.Amount)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка перевода"})
 		return
@@ -52,4 +51,29 @@ func (h *HandlerTransations) TransferMoney(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"succes": transaction,
 	})
+}
+
+func (h *HandlerTransations) GetLastTransactions(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неавторизованный пользователь"})
+		return
+	}
+
+	userID, ok := userIDRaw.(int)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Неверный формат user_id"})
+		return
+	}
+
+	log.Printf("Получаем последние транзакции для userID: %d", userID)
+
+	transactions, err := h.service.GetLastTransactions(context.Background(), userID)
+	if err != nil {
+		log.Printf("Ошибка получения транзакций: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении транзакций"})
+		return
+	}
+
+	c.JSON(http.StatusOK, transactions)
 }

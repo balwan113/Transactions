@@ -12,6 +12,7 @@ import (
 
 type InterfaceTransactions interface {
 	TransferMoney(ctx context.Context, transactions *models.Trasactions) error
+	GetLastTransactions(ctx context.Context, userId int) ([]models.Trasactions, error)
 }
 
 type RepositoryTransactions struct {
@@ -66,4 +67,35 @@ func (repo *RepositoryTransactions) TransferMoney(ctx context.Context, userid in
 	}
 
 	return err
+}
+func (repo *RepositoryTransactions) GetLastTransactions(ctx context.Context, userId int) ([]models.Trasactions, error) {
+	rows, err := repo.db.Query(ctx, `
+SELECT to_userid, at_userid, amount, created_at
+	FROM transactions 
+	WHERE at_userid = $1 OR to_userid = $1
+	ORDER BY created_at DESC  
+	LIMIT 10
+	`, userId)
+
+	if err != nil {
+		return nil, fmt.Errorf("Ошибка при получении транзакций: %v", err)
+	}
+	defer rows.Close()
+
+	var transactions []models.Trasactions
+
+	for rows.Next() {
+		var t models.Trasactions
+		if err := rows.Scan(&t.ToUserID, &t.AtUserID, &t.Amount, &t.CreatedAt); err != nil {
+			log.Printf("Ошибка при сканировании транзакции: %v", err)
+			return nil, fmt.Errorf("Ошибка при сканировании транзакции: %v", err)
+		}
+		transactions = append(transactions, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Ошибка при итерации по результатам: %v", err)
+	}
+
+	return transactions, nil
 }
